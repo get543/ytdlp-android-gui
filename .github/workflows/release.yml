@@ -32,12 +32,22 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # 2. Decode the Keystore into app/
+      # 2. Decode the Keystore into a secure absolute path location
       - name: Decode Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/release-key.jks
+          test -n "$KEYSTORE_BASE64" || {
+            echo "::error::KEYSTORE_BASE64 is not configured"
+            exit 1
+          }
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$GITHUB_WORKSPACE/release-key.jks"
+          test -s "$GITHUB_WORKSPACE/release-key.jks" || {
+            echo "::error::Decoded keystore is empty"
+            exit 1
+          }
 
-      # 3. Build and Sign the Release APK using project properties
+      # 3. Build and Sign the Release APK using absolute project workspace path properties
       - name: Build Signed APK
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -45,7 +55,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           ./gradlew app:assembleRelease \
-            -Pandroid.injected.signing.store.file=release-key.jks \
+            -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/release-key.jks" \
             -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
             -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
             -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
