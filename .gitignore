@@ -13,3 +13,10 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Android Signing / Keystore Security
+*.jks
+*.keystore
+*.base64
+release-key.jks
+release-key.jks.base64
