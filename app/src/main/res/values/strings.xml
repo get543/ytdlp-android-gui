@@ -1,0 +1,50 @@
+<resources>
+    <string name="app_name">yt-dlp GUI</string>
+
+    <!-- URL card -->
+    <string name="label_url">Video / Playlist URL</string>
+    <string name="hint_url">Paste YouTube, SoundCloud, etc. URL here</string>
+    <string name="btn_paste">📋 Paste from Clipboard</string>
+
+    <!-- Mode card -->
+    <string name="label_mode">Download Mode</string>
+    <string name="mode_video">🎬  Download a Video (mp4)</string>
+    <string name="mode_video_playlist">🎞️  Download a Video Playlist (mp4)</string>
+    <string name="mode_music_playlist">🎶  Download a Music Playlist</string>
+    <string name="mode_one_music">🎵  Download One Music Video (audio only)</string>
+
+    <!-- Format card -->
+    <string name="label_resolution">Preferred Resolution</string>
+    <string name="label_audio_format">Preferred Audio Format</string>
+
+    <string name="res_720p">720p  / HD  (Highest FPS)</string>
+    <string name="res_1080p">1080p / FHD (Highest FPS)</string>
+    <string name="res_1440p">1440p / QHD / 2K (Highest FPS)</string>
+    <string name="res_2160p">2160p / UHD / 4K (Highest FPS)</string>
+    <string name="res_best">✨ Best Quality (bestvideo + bestaudio)</string>
+
+    <string name="audio_m4a">.m4a  (native AAC — best quality)</string>
+    <string name="audio_mp3">.mp3  (converted)</string>
+    <string name="audio_webm">.webm (no conversion — best audio)</string>
+    <string name="audio_opus">.opus (160kbps, remuxed — best audio)</string>
+
+    <!-- Embed options chip card -->
+    <string name="label_embed">Embed Options</string>
+    <string name="embed_chapters">Chapters</string>
+    <string name="embed_thumbnail">Thumbnail</string>
+    <string name="embed_subs">Subtitles (mp4 only)</string>
+    <string name="embed_metadata">Metadata</string>
+
+    <!-- Buttons -->
+    <string name="btn_download">Download</string>
+    <string name="btn_downloading">Downloading…</string>
+
+    <!-- Progress card -->
+    <string name="status_downloading">Downloading…</string>
+    <string name="status_error">Download failed</string>
+
+    <!-- Errors -->
+    <string name="err_url_empty">Please enter a URL first</string>
+    <string name="err_clipboard_empty">Clipboard is empty</string>
+    <string name="err_storage_denied">Storage permission is required to save files</string>
+</resources>

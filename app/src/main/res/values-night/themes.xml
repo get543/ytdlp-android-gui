@@ -1,0 +1,13 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Dark-mode overrides — lighter, more vibrant indigo on dark backgrounds -->
+    <style name="Base.Theme.Ytdlpgui" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">#9FA8DA</item>
+        <item name="colorPrimaryVariant">#7986CB</item>
+        <item name="colorOnPrimary">#1A237E</item>
+        <item name="colorPrimaryContainer">#283593</item>
+        <item name="colorOnPrimaryContainer">#C5CAE9</item>
+        <item name="colorSecondary">#80DEEA</item>
+        <item name="colorSecondaryVariant">#4DD0E1</item>
+        <item name="colorOnSecondary">#004D40</item>
+    </style>
+</resources>
