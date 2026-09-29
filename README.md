@@ -2,14 +2,19 @@
 
 A lightweight, native Android frontend for [yt-dlp](https://github.com/yt-dlp/yt-dlp), built with Kotlin. This app provides a user-friendly interface to download videos and audio from thousands of supported sites directly to your Android device.
 
-
 [![Download APK](https://img.shields.io/badge/Download_APK-2EA043?style=for-the-badge&logo=android&logoColor=white)](https://github.com/get543/ytdlp-android-gui/releases/latest/download/app-release.apk)
+
+## Screenshots
+
+| yt-dlp options                   | Menu Options               | Downloading                              |
+| -------------------------------- | -------------------------- | ---------------------------------------- |
+| ![Whole App](./assets/whole.jpg) | ![Menu](./assets/menu.jpg) | ![Downloading](./assets/downloading.jpg) |
 
 ## 🚀 Features
 
 - **Background Downloads**: Powered by a Foreground Service so downloads continue even if the app is minimized.
 - **Real-time Progress**: Notification with a progress bar and ETA tracking.
-- **Advanced Format Selection**: 
+- **Advanced Format Selection**:
   - Video: 720p, 1080p, 1440p, 4K (2160p), or "Best Quality".
   - Audio: M4A, MP3, WebM, or Opus.
 - **Playlist Support**: Seamlessly download entire video or music playlists into structured subfolders.
@@ -30,11 +35,13 @@ A lightweight, native Android frontend for [yt-dlp](https://github.com/yt-dlp/yt
 ## 📦 Installation & Setup
 
 ### For Users
-1. Download the latest APK from the [Releases](https://github.com/get543/ytdlp-android-gui/releases) page.
+
+1. Download the latest APK from the [Releases](https://github.com/get543/ytdlp-android-gui/releases/latest/download/app-release.apk) page.
 2. Install the APK (you may need to allow "Install from Unknown Sources").
 3. Launch the app, paste a URL, and start downloading!
 
 ### For Developers
+
 1. Clone the repository:
    ```bash
    git clone https://github.com/get543/ytdlp-android-gui.git
@@ -44,13 +51,16 @@ A lightweight, native Android frontend for [yt-dlp](https://github.com/yt-dlp/yt
 4. Build the project using `./gradlew assembleDebug`.
 
 ## 🛡️ Permissions
+
 - **Internet**: To download media and check for updates.
 - **Foreground Service**: To keep downloads alive in the background.
 - **Post Notifications** (Android 13+): To show download progress in the notification tray.
 - **Write External Storage** (Android 9 & below): To save files to the public Downloads folder.
 
 ## 📄 License
+
 This project is for educational purposes. Please ensure you comply with the terms of service of any website you download from and respect copyright laws.
 
 ---
-*Developed with ❤️ using Kotlin.*
+
+_Developed with ❤️ using Kotlin._
