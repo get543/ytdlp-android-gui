@@ -293,16 +293,23 @@ class MainActivity : AppCompatActivity() {
 
     private fun observeLog() {
         viewModel.fullLog.observe(this) { logText ->
-            val scrollY = binding.logScrollView.scrollY
-            val maxScrollY = (binding.tvLog.height - binding.logScrollView.height).coerceAtLeast(0)
-            val wasAtBottom = scrollY >= (maxScrollY - 50)
+            val logScrollView = binding.logScrollView
+            val screenScrollY = binding.nestedScrollView.scrollY
+            val logScrollY = logScrollView.scrollY
+            val logContentHeight = logScrollView.getChildAt(0)?.height ?: 0
+            val maxLogScrollY = (logContentHeight - logScrollView.height).coerceAtLeast(0)
+            val wasAtBottom = logScrollY >= (maxLogScrollY - 50).coerceAtLeast(0)
 
             binding.tvLog.text = logText
 
-            if (wasAtBottom) {
-                binding.logScrollView.post {
-                    binding.logScrollView.fullScroll(View.FOCUS_DOWN)
+            logScrollView.post {
+                val updatedContentHeight = logScrollView.getChildAt(0)?.height ?: 0
+                if (wasAtBottom) {
+                    logScrollView.scrollTo(0, updatedContentHeight)
+                } else {
+                    logScrollView.scrollTo(0, logScrollY)
                 }
+                binding.nestedScrollView.scrollTo(0, screenScrollY)
             }
         }
     }

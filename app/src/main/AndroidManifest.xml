@@ -11,7 +11,7 @@
         android:maxSdkVersion="28" />
 
     <!-- Required on Android 13+ to read media files from shared storage -->
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
 
     <!-- Required for background downloads and notification updates -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
