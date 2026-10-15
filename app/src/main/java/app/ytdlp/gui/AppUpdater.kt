@@ -1,9 +1,10 @@
 package app.ytdlp.gui
 
-import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import android.util.Log
 import android.view.ViewGroup
 import android.widget.LinearLayout
@@ -16,16 +17,38 @@ import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import androidx.core.net.toUri
 
 object AppUpdater {
     private const val TAG = "AppUpdater"
-    
-    // ⚠️ TODO: REPLACE WITH YOUR ACTUAL GITHUB OWNER AND REPOSITORY NAME
+
     private const val GITHUB_OWNER = "get543"
     private const val GITHUB_REPO = "ytdlp-android-gui"
     private const val API_URL = "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/releases/latest"
 
     fun checkForUpdates(activity: Activity) {
+        val cacheFile = File(activity.cacheDir, "update.apk")
+
+        // If an update APK was already downloaded and permission is now granted, offer to install it immediately
+        if (cacheFile.exists() && (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || activity.packageManager.canRequestPackageInstalls())) {
+            activity.runOnUiThread {
+                AlertDialog.Builder(activity)
+                    .setTitle("Install Downloaded Update")
+                    .setMessage("An update APK has already been downloaded. Would you like to install it now?")
+                    .setPositiveButton("Install") { dialog, _ ->
+                        dialog.dismiss()
+                        installApk(activity, cacheFile)
+                    }
+                    .setNegativeButton("Delete & Re-check") { dialog, _ ->
+                        dialog.dismiss()
+                        cacheFile.delete()
+                        checkForUpdates(activity)
+                    }
+                    .show()
+            }
+            return
+        }
+
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val jsonResponse = fetchLatestReleaseJson() ?: return@launch
@@ -100,7 +123,6 @@ object AppUpdater {
     }
 
     private fun startApkDownload(activity: Activity, downloadUrl: String) {
-        // Create a programmatic Material 3 progress dialog layout
         val padding = (16 * activity.resources.displayMetrics.density).toInt()
         val container = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
@@ -142,7 +164,7 @@ object AppUpdater {
 
                 val fileLength = connection.contentLength
                 val cacheFile = File(activity.cacheDir, "update.apk")
-                
+
                 connection.inputStream.use { input ->
                     cacheFile.outputStream().use { output ->
                         val data = ByteArray(4096)
@@ -165,7 +187,7 @@ object AppUpdater {
 
                 withContext(Dispatchers.Main) {
                     progressDialog.dismiss()
-                    launchPackageInstaller(activity, cacheFile)
+                    installApk(activity, cacheFile)
                 }
 
             } catch (e: Exception) {
@@ -182,19 +204,48 @@ object AppUpdater {
         }
     }
 
-    private fun launchPackageInstaller(context: Context, apkFile: File) {
+    private fun installApk(activity: Activity, apkFile: File) {
+        if (!apkFile.exists()) return
+
+        // On Android 8.0+ (API 26+), verify if 'Install unknown apps' permission is enabled for this app
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !activity.packageManager.canRequestPackageInstalls()) {
+            AlertDialog.Builder(activity)
+                .setTitle("Install Permission Required")
+                .setMessage("To install the update, please allow 'Install unknown apps' for ${activity.getString(R.string.app_name)} in Settings.")
+                .setPositiveButton("Open Settings") { dialog, _ ->
+                    dialog.dismiss()
+                    val intent = Intent(
+                        Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                        "package:${activity.packageName}".toUri()
+                    )
+                    activity.startActivity(intent)
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+            return
+        }
+
+        launchPackageInstaller(activity, apkFile)
+    }
+
+    private fun launchPackageInstaller(activity: Activity, apkFile: File) {
         try {
-            val authority = "${context.packageName}.fileprovider"
-            val apkUri = FileProvider.getUriForFile(context, authority, apkFile)
-            
+            val authority = "${activity.packageName}.fileprovider"
+            val apkUri = FileProvider.getUriForFile(activity, authority, apkFile)
+
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(apkUri, "application/vnd.android.package-archive")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            context.startActivity(intent)
+            activity.startActivity(intent)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to launch package installer", e)
+            AlertDialog.Builder(activity)
+                .setTitle("Installation Failed")
+                .setMessage("Could not launch package installer: ${e.localizedMessage}")
+                .setPositiveButton("OK", null)
+                .show()
         }
     }
 }
