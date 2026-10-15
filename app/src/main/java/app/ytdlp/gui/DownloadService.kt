@@ -34,9 +34,48 @@ class DownloadService : Service() {
 
         val state = MutableLiveData<DownloadState>(DownloadState.Idle)
         val logBuilder = StringBuilder()
-        val newLogLine = MutableLiveData<String>()
+        val fullLog = MutableLiveData<String>("")
 
         private var isRunning = false
+        private var isLastLineProgress = false
+
+        fun clearLog() {
+            synchronized(logBuilder) {
+                logBuilder.clear()
+                isLastLineProgress = false
+            }
+            fullLog.postValue("")
+        }
+
+        fun appendLog(line: String) {
+            val cleanLine = if (line.contains('\r')) {
+                line.substringAfterLast('\r').trimEnd('\r', '\n')
+            } else {
+                line.trimEnd('\r', '\n')
+            }
+            if (cleanLine.isBlank()) return
+
+            val trimmed = cleanLine.trim()
+            val isProgress = trimmed.startsWith("[download]") && (trimmed.contains("%") || trimmed.contains("ETA "))
+
+            synchronized(logBuilder) {
+                if (isProgress && isLastLineProgress) {
+                    val lastNewline = logBuilder.lastIndexOf("\n")
+                    if (lastNewline != -1) {
+                        logBuilder.replace(lastNewline + 1, logBuilder.length, cleanLine)
+                    } else {
+                        logBuilder.clear()
+                        logBuilder.append(cleanLine)
+                    }
+                } else {
+                    if (logBuilder.isNotEmpty()) logBuilder.append("\n")
+                    logBuilder.append(cleanLine)
+                }
+                isLastLineProgress = isProgress
+            }
+
+            fullLog.postValue(logBuilder.toString())
+        }
 
         fun start(context: Context, url: String, mode: DownloadMode, embedOptions: EmbedOptions) {
             val intent = Intent(context, DownloadService::class.java).apply {
@@ -116,7 +155,7 @@ class DownloadService : Service() {
     }
 
     private suspend fun performDownload(url: String, mode: DownloadMode, embed: EmbedOptions) {
-        logBuilder.clear()
+        clearLog()
         state.postValue(DownloadState.Downloading(0f, "—"))
 
         try {
@@ -189,12 +228,6 @@ class DownloadService : Service() {
                 appendLog("⚠ Auto-update failed, using bundled version.")
             }
         }
-    }
-
-    private fun appendLog(line: String) {
-        if (logBuilder.isNotEmpty()) logBuilder.append("\n")
-        logBuilder.append(line)
-        newLogLine.postValue(line)
     }
 
     private fun createNotificationChannel() {

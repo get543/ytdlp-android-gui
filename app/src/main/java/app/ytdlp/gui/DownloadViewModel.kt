@@ -25,7 +25,7 @@ sealed class DownloadState {
 class DownloadViewModel(application: Application) : AndroidViewModel(application) {
 
     val state: LiveData<DownloadState> = DownloadService.state
-    val newLogLine: LiveData<String> = DownloadService.newLogLine
+    val fullLog: LiveData<String> = DownloadService.fullLog
 
     /** Returns the entire accumulated log from the service. */
     fun getFullLog(): String = DownloadService.logBuilder.toString()
@@ -46,7 +46,7 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
     /** Reset to Idle. */
     fun reset() {
         DownloadService.state.value = DownloadState.Idle
-        DownloadService.logBuilder.clear()
+        DownloadService.clearLog()
     }
 
     /**
@@ -79,7 +79,7 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
 
     /** Clears the accumulated internal log. */
     fun clearLog() {
-        DownloadService.logBuilder.clear()
+        DownloadService.clearLog()
     }
 
     /** Clears all files inside the app's internal cache directory recursively. */
@@ -105,10 +105,6 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun appendLog(line: String) {
-        if (DownloadService.logBuilder.isNotEmpty()) {
-            DownloadService.logBuilder.append("\n")
-        }
-        DownloadService.logBuilder.append(line)
-        DownloadService.newLogLine.postValue(line)
+        DownloadService.appendLog(line)
     }
 }

@@ -66,13 +66,6 @@ class MainActivity : AppCompatActivity() {
             viewModel.stopDownload()
         }
 
-        // ── Restore log if the screen was rotated during a download ────
-        val existingLog = viewModel.getFullLog()
-        if (existingLog.isNotEmpty()) {
-            binding.tvLog.text = existingLog
-            binding.logScrollView.post { binding.logScrollView.fullScroll(View.FOCUS_DOWN) }
-        }
-
         // ── Observe ViewModel state ────────────────────────────────────
         observeDownloadState()
         observeLog()
@@ -99,7 +92,6 @@ class MainActivity : AppCompatActivity() {
             }
             1002 -> {
                 viewModel.clearLog()
-                binding.tvLog.text = ""
                 Toast.makeText(this, "Log cleared", Toast.LENGTH_SHORT).show()
                 true
             }
@@ -300,22 +292,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun observeLog() {
-        viewModel.newLogLine.observe(this) { newLine ->
-            if (binding.tvLog.text.isNullOrEmpty()) {
-                binding.tvLog.text = newLine
-            } else {
-                binding.tvLog.append("\n$newLine")
-            }
-
-            // Detect if the user has manually scrolled up. If they are looking at older logs,
-            // we do NOT force scroll to the bottom. If they are already at the bottom, auto-scroll with new lines.
+        viewModel.fullLog.observe(this) { logText ->
             val scrollY = binding.logScrollView.scrollY
             val maxScrollY = (binding.tvLog.height - binding.logScrollView.height).coerceAtLeast(0)
-            
-            // Allow a small threshold (e.g. 50 pixels) in case of precise scroll position calculations
-            val isAtBottom = scrollY >= (maxScrollY - 50)
+            val wasAtBottom = scrollY >= (maxScrollY - 50)
 
-            if (isAtBottom) {
+            binding.tvLog.text = logText
+
+            if (wasAtBottom) {
                 binding.logScrollView.post {
                     binding.logScrollView.fullScroll(View.FOCUS_DOWN)
                 }

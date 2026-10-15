@@ -4,7 +4,7 @@ A lightweight, native Android frontend for [yt-dlp](https://github.com/yt-dlp/yt
 
 [![Download APK](https://img.shields.io/badge/Download_APK-2EA043?style=for-the-badge&logo=android&logoColor=white)](https://github.com/get543/ytdlp-android-gui/releases/latest/download/app-release.apk)
 
-## Screenshots
+## 🖼️ Screenshots
 
 | yt-dlp options                   | Menu Options               | Downloading                              |
 | -------------------------------- | -------------------------- | ---------------------------------------- |
