@@ -6,9 +6,9 @@ A lightweight, native Android frontend for [yt-dlp](https://github.com/yt-dlp/yt
 
 ## 🖼️ Screenshots
 
-| yt-dlp options                   | Menu Options               | Downloading                              |
-| -------------------------------- | -------------------------- | ---------------------------------------- |
-| ![Whole App](./assets/whole.jpg) | ![Menu](./assets/menu.jpg) | ![Downloading](./assets/downloading.jpg) |
+| yt-dlp options                   | Menu Options               | Downloading                              | In-App Updates                                                                                                                                   |
+| -------------------------------- | -------------------------- | ---------------------------------------- |--------------------------------------------------------------------------------------------------------------------------------------------------|
+| ![Whole App](./assets/whole.jpg) | ![Menu](./assets/menu.jpg) | ![Downloading](./assets/downloading.jpg) | ![Update Available Dialog](./assets/update%20available%20dialog.jpg) ![Downloading Updates Dialog](./assets/downloading%20updates%20dialog.jpg)  |
 
 ## 🚀 Features
 

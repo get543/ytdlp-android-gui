@@ -170,6 +170,7 @@ class MainActivity : AppCompatActivity() {
             val url = binding.urlEditText.text?.toString()?.trim() ?: ""
             if (url.isEmpty()) {
                 binding.urlInputLayout.error = getString(R.string.err_url_empty)
+                Toast.makeText(this, getString(R.string.err_url_empty), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             binding.urlInputLayout.error = null
