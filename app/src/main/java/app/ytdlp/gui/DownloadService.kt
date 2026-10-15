@@ -48,33 +48,32 @@ class DownloadService : Service() {
         }
 
         fun appendLog(line: String) {
-            val cleanLine = if (line.contains('\r')) {
-                line.substringAfterLast('\r').trimEnd('\r', '\n')
-            } else {
-                line.trimEnd('\r', '\n')
-            }
+            val cleanLine = sanitizeLine(line)
             if (cleanLine.isBlank()) return
 
-            val trimmed = cleanLine.trim()
-            val isProgress = trimmed.startsWith("[download]") && (trimmed.contains("%") || trimmed.contains("ETA "))
+            val isProgress = isProgressLine(cleanLine)
 
             synchronized(logBuilder) {
                 if (isProgress && isLastLineProgress) {
-                    val lastNewline = logBuilder.lastIndexOf("\n")
-                    if (lastNewline != -1) {
-                        logBuilder.replace(lastNewline + 1, logBuilder.length, cleanLine)
-                    } else {
-                        logBuilder.clear()
-                        logBuilder.append(cleanLine)
-                    }
+                    val replaceStart = logBuilder.lastIndexOf('\n') + 1
+                    logBuilder.replace(replaceStart, logBuilder.length, cleanLine)
                 } else {
-                    if (logBuilder.isNotEmpty()) logBuilder.append("\n")
+                    if (logBuilder.isNotEmpty()) logBuilder.append('\n')
                     logBuilder.append(cleanLine)
                 }
                 isLastLineProgress = isProgress
             }
 
             fullLog.postValue(logBuilder.toString())
+        }
+
+        private fun sanitizeLine(line: String): String {
+            return line.substringAfterLast('\r').trimEnd('\r', '\n')
+        }
+
+        private fun isProgressLine(line: String): Boolean {
+            val trimmed = line.trimStart()
+            return trimmed.startsWith("[download]") && (trimmed.contains('%') || trimmed.contains("ETA "))
         }
 
         fun start(context: Context, url: String, mode: DownloadMode, embedOptions: EmbedOptions) {
@@ -134,7 +133,7 @@ class DownloadService : Service() {
         if (isRunning) return START_NOT_STICKY
         isRunning = true
 
-        val notification = createProgressNotification("Starting...")
+        val notification = createProgressNotification("Starting Download...", "Connecting...")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         } else {
@@ -158,61 +157,76 @@ class DownloadService : Service() {
         clearLog()
         state.postValue(DownloadState.Downloading(0f, "—"))
 
+        var currentTitle = "Downloading..."
+
         try {
             ensureEngineIsUpdated()
             val request = buildYtDlpRequest(this, url, mode, embed)
             
             val downloadedFiles = mutableSetOf<String>()
-            var caughtException: Exception? = null
+            var downloadError: Exception? = null
 
             try {
                 YoutubeDL.getInstance().execute(request, "ytdlp_process") { progress, eta, line ->
                     val progressInt = progress.toInt()
+
+                    parseDestinationPath(line)?.let { path ->
+                        downloadedFiles.add(path)
+                        val rawName = File(path).nameWithoutExtension
+                        val cleanTitle = cleanDisplayTitle(rawName)
+                        if (cleanTitle.isNotBlank()) currentTitle = cleanTitle
+                    }
+
                     state.postValue(DownloadState.Downloading(progress, eta.toString()))
                     appendLog(line)
-                    updateNotification(progressInt, "Downloading... $progressInt% (ETA: $eta)")
-
-                    when {
-                        line.contains("Merging formats into") -> {
-                            Regex("Merging formats into \"(.+)\"").find(line)?.groupValues?.get(1)?.let { downloadedFiles.add(it) }
-                        }
-                        line.contains("[ExtractAudio] Destination:") -> {
-                            Regex("\\[ExtractAudio\\] Destination: (.+)").find(line)?.groupValues?.get(1)?.let { downloadedFiles.add(it) }
-                        }
-                        line.contains("[download] Destination:") -> {
-                            Regex("\\[download\\] Destination: (.+)").find(line)?.groupValues?.get(1)?.let { downloadedFiles.add(it) }
-                        }
-                    }
+                    updateNotification(currentTitle, "$progressInt% (ETA: $eta)", progressInt)
                 }
             } catch (e: Exception) {
-                caughtException = e
+                downloadError = e
             }
 
-            if (caughtException != null && downloadedFiles.isEmpty()) {
-                throw caughtException
+            if (downloadError != null && downloadedFiles.isEmpty()) {
+                throw downloadError
             }
 
-            val publicUris = mutableListOf<Uri>()
-            downloadedFiles.forEach { path ->
-                val sourceFile = File(path)
-                if (sourceFile.exists()) {
-                    val publicUri = publishToPublicDownloads(this, sourceFile)
-                    publicUri?.let { publicUris.add(it) }
-                }
-            }
-
+            val publicUris = publishDownloadedFiles(downloadedFiles)
             cleanupCache(this)
 
             state.postValue(DownloadState.Done("Download complete ✓"))
             appendLog("✓ Finished successfully and saved to Downloads.")
-            
-            showCompletionNotification(mode, publicUris)
+            showCompletionNotification(currentTitle, mode, publicUris)
 
         } catch (e: Exception) {
             val msg = e.message ?: e.toString()
             state.postValue(DownloadState.Error(msg))
             appendLog("✗ Error: $msg")
             showErrorNotification(msg)
+        }
+    }
+
+    private fun parseDestinationPath(line: String): String? {
+        val regex = when {
+            line.contains("Merging formats into") -> Regex("Merging formats into \"(.+)\"")
+            line.contains("[ExtractAudio] Destination:") -> Regex("\\[ExtractAudio] Destination: (.+)")
+            line.contains("[download] Destination:") -> Regex("\\[download] Destination: (.+)")
+            else -> return null
+        }
+        return regex.find(line)?.groupValues?.get(1)
+    }
+
+    private fun cleanDisplayTitle(rawTitle: String): String {
+        if (rawTitle.isBlank()) return ""
+        return rawTitle
+            .replace(Regex("\\.f\\d+"), "")
+            .replace(Regex("\\[[^]]+]"), "")
+            .trim()
+            .trimEnd('.', '-', '_', ' ')
+    }
+
+    private fun publishDownloadedFiles(paths: Set<String>): List<Uri> {
+        return paths.mapNotNull { path ->
+            val sourceFile = File(path)
+            if (sourceFile.exists()) publishToPublicDownloads(this, sourceFile) else null
         }
     }
 
@@ -241,7 +255,7 @@ class DownloadService : Service() {
         }
     }
 
-    private fun createProgressNotification(content: String, progress: Int = 0): Notification {
+    private fun createProgressNotification(title: String, content: String, progress: Int = 0): Notification {
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
@@ -251,7 +265,7 @@ class DownloadService : Service() {
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(getString(R.string.app_name))
+            .setContentTitle(title)
             .setContentText(content)
             .setSmallIcon(android.R.drawable.stat_sys_download)
             .setProgress(100, progress, progress == 0)
@@ -260,11 +274,11 @@ class DownloadService : Service() {
             .build()
     }
 
-    private fun updateNotification(progress: Int, content: String) {
-        notificationManager.notify(NOTIFICATION_ID, createProgressNotification(content, progress))
+    private fun updateNotification(title: String, content: String, progress: Int) {
+        notificationManager.notify(NOTIFICATION_ID, createProgressNotification(title, content, progress))
     }
 
-    private fun showCompletionNotification(mode: DownloadMode, publicUris: List<Uri>) {
+    private fun showCompletionNotification(title: String, mode: DownloadMode, publicUris: List<Uri>) {
         val isPlaylist = mode.isPlaylist
         val intent = if (isPlaylist || publicUris.isEmpty()) {
             Intent(DownloadManager.ACTION_VIEW_DOWNLOADS)
@@ -282,9 +296,12 @@ class DownloadService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val displayTitle = if (title != "Downloading...") title else "Download Finished"
+        val contentText = if (isPlaylist) "Playlist saved to ~/Downloads/yt-dlp GUI/" else "File saved to ~/Downloads/yt-dlp GUI/"
+
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Download Finished")
-            .setContentText(if (isPlaylist) "Playlist saved to Downloads" else "File saved to Downloads")
+            .setContentTitle(displayTitle)
+            .setContentText(contentText)
             .setSmallIcon(android.R.drawable.stat_sys_download_done)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)

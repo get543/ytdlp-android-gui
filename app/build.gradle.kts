@@ -13,7 +13,7 @@ android {
         minSdk = 24
         targetSdk = 37
         versionCode = 1
-        versionName = "1.3"
+        versionName = "1.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -60,8 +60,8 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
 
     // Core yt-dlp wrapper library
-    implementation("io.github.junkfood02.youtubedl-android:library:0.18.1")
+    implementation(libs.youtubedl.android.library)
 
     // FFmpeg library (required for merging high-res video + audio streams)
-    implementation("io.github.junkfood02.youtubedl-android:ffmpeg:0.18.1")
+    implementation(libs.youtubedl.android.ffmpeg)
 }
